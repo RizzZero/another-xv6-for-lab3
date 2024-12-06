@@ -21,3 +21,4 @@
 #define SYS_mkdir  20
 #define SYS_close  21
 #define SYS_set_proc_sched 30
+#define SYS_change_queue 31
