@@ -90,6 +90,9 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
   p-> sched_info.consecutive_run = 0;
+  p->sched_info.burst_time = 0;
+  p->sched_info.confidence = 0;
+  p->arrival_time = ticks;
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -534,4 +537,20 @@ procdump(void)
     }
     cprintf("\n");
   }
+}
+int
+set_proc_sched(int pid, int burst, int confidence)
+{
+  struct proc *p;
+  acquire(&ptable.lock);
+  for (p=ptable.proc;p<&ptable.proc[NPROC];p++){
+    if(p->pid==pid){
+      p->sched_info.burst_time = burst;
+      p->sched_info.confidence = confidence;
+      release(&ptable.lock);
+      return 1;
+    }
+  }
+  release(&ptable.lock);
+  return -1;
 }
