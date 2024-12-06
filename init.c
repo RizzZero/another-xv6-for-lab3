@@ -27,6 +27,7 @@ main(void)
       exit();
     }
     if(pid == 0){
+      change_queue(getpid(),0);
       exec("sh", argv);
       printf(1, "init: exec sh failed\n");
       exit();
