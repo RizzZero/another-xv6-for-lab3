@@ -554,3 +554,27 @@ set_proc_sched(int pid, int burst, int confidence)
   release(&ptable.lock);
   return -1;
 }
+int
+change_queue(int pid, int queue){
+  struct proc *p;
+  int Q = -1;
+  if(queue == UNSET){
+    if(pid == 1){
+      queue = ROUND_ROBIN;
+    }
+    else if(pid > 0){
+      queue = SJF;
+    }
+    else return -1;
+  }
+  acquire(&ptable.lock);
+  for(p = ptable.proc;p<&ptable.proc[NPROC];++p){
+    if(pid==p->pid){
+      Q = p->sched_info.queue;
+      p->sched_info.queue = queue;
+      p->arrival_time = ticks;
+    }
+  }
+  release(&ptable.lock);
+  return Q;
+}
