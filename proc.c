@@ -6,6 +6,7 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "sleeplock.h"
 
 struct {
   struct spinlock lock;
@@ -88,7 +89,7 @@ allocproc(void)
 found:
   p->state = EMBRYO;
   p->pid = nextpid++;
-
+  p-> sched_info.consecutive_run = 0;
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -342,7 +343,7 @@ scheduler(void)
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
-
+      p->sched_info.consecutive_run += 1;//increment consecutive run(new)
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
@@ -460,8 +461,10 @@ wakeup1(void *chan)
   struct proc *p;
 
   for(p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    if(p->state == SLEEPING && p->chan == chan)
+    if(p->state == SLEEPING && p->chan == chan){
       p->state = RUNNABLE;
+      p->sched_info.consecutive_run = 0;
+    }
 }
 
 // Wake up all processes sleeping on chan.
