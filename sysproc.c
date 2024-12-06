@@ -96,3 +96,9 @@ sys_set_proc_sched(void){
     return -1;
   return set_proc_sched(pid,burst,confidence);
 }
+int
+sys_change_queue(void){
+  int pid, queue;
+  if(argint(0,&pid) < 0 || argint(1,&queue) < 0 || queue < ROUND_ROBIN || queue > FCFS) return -1;
+  return change_queue(pid,queue);
+}
