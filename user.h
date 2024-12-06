@@ -24,6 +24,7 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int set_proc_sched(int,int,int);
+int change_queue(int,int);
 
 // ulib.c
 int stat(const char*, struct stat*);
