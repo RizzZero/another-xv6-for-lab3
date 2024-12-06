@@ -31,7 +31,21 @@ struct context {
   uint ebp;
   uint eip;
 };
+//cpu scheduling changes from here
+enum Squeue {UNSET, ROUND_ROBIN, SJF, FCFS};
 
+
+
+struct schedData {
+  enum Squeue queue;
+  int last_run;
+  int wait_time;
+  int burst_time;
+  int confidence;
+  int arrival_time;
+  int consecutive_run;
+};
+// to here
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Per-process state
@@ -49,6 +63,8 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  uint start_time;              // start time of the process(new)
+  struct schedData sched_info ;     //scheduling data(new)
 };
 
 // Process memory is laid out contiguously, low addresses first:
