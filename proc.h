@@ -33,7 +33,7 @@ struct context {
 };
 //cpu scheduling changes from here
 enum Squeue {UNSET, ROUND_ROBIN, SJF, FCFS};
-
+extern uint ticks;
 
 
 struct schedData {
@@ -63,7 +63,7 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
-  uint start_time;              // start time of the process(new)
+  uint arrival_time;              // start time of the process(new)
   struct schedData sched_info ;     //scheduling data(new)
 };
 
