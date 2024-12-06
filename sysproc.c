@@ -89,3 +89,10 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+int
+sys_set_proc_sched(void){
+  int pid, burst ,confidence;
+  if(argint(0,&pid)<0 || argint(1,&burst)<0 || argint(2,&confidence))
+    return -1;
+  return set_proc_sched(pid,burst,confidence);
+}
