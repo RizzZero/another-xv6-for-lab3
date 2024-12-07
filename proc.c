@@ -571,8 +571,14 @@ change_queue(int pid, int queue){
   for(p = ptable.proc;p<&ptable.proc[NPROC];++p){
     if(pid==p->pid){
       Q = p->sched_info.queue;
-      p->sched_info.queue = queue;
-      p->arrival_time = ticks;
+      if (Q != queue){
+        p->sched_info.queue = queue;
+        p->arrival_time = ticks;
+        Q = 1;
+      }
+      else {
+        Q = -1;
+      }
     }
   }
   release(&ptable.lock);
