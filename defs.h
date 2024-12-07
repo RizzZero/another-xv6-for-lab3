@@ -21,6 +21,10 @@ void            consoleinit(void);
 void            cprintf(char*, ...);
 void            consoleintr(int(*)(void));
 void            panic(char*) __attribute__((noreturn));
+int             count_digits(int);
+void            add_space(int);
+void            add_dots(int);
+
 
 // exec.c
 int             exec(char*, char**);
@@ -122,6 +126,7 @@ void            wakeup(void*);
 void            yield(void);
 int             set_proc_sched(int,int,int);
 int             change_queue(int,int);
+int             show_procs_info(void);
 
 // swtch.S
 void            swtch(struct context**, struct context*);
