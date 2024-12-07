@@ -22,3 +22,4 @@
 #define SYS_close  21
 #define SYS_set_proc_sched 30
 #define SYS_change_queue 31
+#define SYS_show_procs_info 32
