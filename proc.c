@@ -93,6 +93,7 @@ found:
   p->sched_info.burst_time = 0;
   p->sched_info.confidence = 0;
   p->arrival_time = ticks;
+  p->sched_info.queue = UNSET;
   release(&ptable.lock);
 
   // Allocate kernel stack.
