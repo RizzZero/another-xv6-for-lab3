@@ -324,6 +324,63 @@ wait(void)
 //  - swtch to start running that process
 //  - eventually that process transfers control
 //      via swtch back to the scheduler.
+struct proc*
+round_robin(struct proc* previous_inQ){
+  struct proc* p = previous_inQ;
+  for(;;){
+    p++;
+    if( p >= &ptable.proc[NPROC]){
+      p = ptable.proc ;
+    }
+    if(p->state == RUNNABLE && p->sched_info.queue == ROUND_ROBIN){
+      return p;
+    }
+    else if(p == previous_inQ){
+      return 0;
+    }
+  }
+
+}
+struct proc*
+shortest_job_first(struct proc* previous_inQ){
+  struct proc* p = previous_inQ;
+  int least_time = 100;
+  struct proc* least_proc = 0 ;
+  for(;;){
+    p++;
+    if( p >= &ptable.proc[NPROC]){
+      p = ptable.proc ;
+    }
+    if( p->state == RUNNABLE && p->sched_info.queue == SJF){
+      if (p->sched_info.burst_time <= least_time){
+        least_time = p->sched_info.burst_time ; 
+        least_proc = p ;
+      }
+      else continue;
+    }
+  }
+  return least_proc;
+}
+struct proc*
+first_come_first_serve(struct proc* previous_inQ){
+  struct proc* p = previous_inQ;
+  int time = ticks;
+  struct proc* first_come = 0 ;
+  for(;;){
+    p++;
+    if( p >= &ptable.proc[NPROC]){
+      p = ptable.proc ;
+    }
+    if( p->state == RUNNABLE && p->sched_info.queue == FCFS){
+      if(p->arrival_time <= time){
+        time = p->arrival_time;
+        first_come = p;
+      }
+      else continue;
+    }
+  }
+  return first_come;
+}
 void
 scheduler(void)
 {
