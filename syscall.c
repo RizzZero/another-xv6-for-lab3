@@ -105,6 +105,7 @@ extern int sys_write(void);
 extern int sys_uptime(void);
 extern int sys_set_proc_sched(void);
 extern int sys_change_queue(void);
+extern int sys_show_procs_info(void);
 
 
 static int (*syscalls[])(void) = {
@@ -131,6 +132,7 @@ static int (*syscalls[])(void) = {
 [SYS_close]   sys_close,
 [SYS_set_proc_sched]  sys_set_proc_sched,
 [SYS_change_queue]    sys_change_queue,
+[SYS_show_procs_info] sys_show_procs_info,
 };
 
 void
