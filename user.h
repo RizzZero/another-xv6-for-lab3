@@ -25,7 +25,7 @@ int sleep(int);
 int uptime(void);
 int set_proc_sched(int,int,int);
 int change_queue(int,int);
-
+int show_procs_info(void);
 // ulib.c
 int stat(const char*, struct stat*);
 char* strcpy(char*, const char*);
