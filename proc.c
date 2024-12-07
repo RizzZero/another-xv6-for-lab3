@@ -585,3 +585,59 @@ change_queue(int pid, int queue){
   release(&ptable.lock);
   return Q;
 }
+int
+count_digits(int number){
+  int count = 0;
+  while (number!=0){
+    number/=10;
+    count += 1;
+  }
+  return count;
+}
+void
+add_space(int count){
+  for(int i = 0 ; i < count ; i++) cprintf(" ");
+}
+void
+add_dots(int count){
+  for(int i = 0 ; i < count ; i++) cprintf(".");
+}
+int
+show_procs_info(void){
+  struct proc* p;
+  static char* states[] = {
+    [UNUSED] = "unused", [EMBRYO] = "embryo", [SLEEPING] = "sleeping",
+    [RUNNABLE] = "runnable" , [RUNNING] = "running" , [ZOMBIE] = "zombie"
+  };
+  static int cols[] = {16,4,12,6,5,5,6,7,7};
+  cprintf("name            pid state       queue wait conf burst consec arrival\n");
+  add_dots(68);
+  cprintf("\n");
+  for ( p = ptable.proc ; p < &ptable.proc[NPROC] ; p++ ){
+    if(p->state == UNUSED) continue;
+    const char*state;
+    if( p->state >= 0 && p->state < NELEM(states) &&  states[p->state]) state = states[p->state];
+    else state = "unkonwn";
+    cprintf("%s",p->name); //name
+    add_space(cols[0]-strlen(p->name));
+    cprintf("%d",p->pid); //pid
+    add_space(cols[1]-count_digits(p->pid));
+    cprintf("%s",state); //state
+    add_space(cols[2]-strlen(state));
+    cprintf("%d",p->sched_info.queue);//queue
+    add_space(cols[3]-1);
+    cprintf("%d",p->sched_info.wait_time);//wait time
+    add_space(cols[4] - count_digits(p->sched_info.wait_time));
+    cprintf("%d",p->sched_info.confidence); //confidence
+    add_space(cols[5]-count_digits(p->sched_info.confidence));
+    cprintf("%d",p->sched_info.burst_time); //burst time
+    add_space(cols[6]-p->sched_info.burst_time);
+    cprintf("%d",p->sched_info.consecutive_run); //consecutive run
+    add_space(cols[7]-p->sched_info.consecutive_run);
+    cprintf("%d",p->arrival_time); //arrival
+    cprintf("\n");
+  }
+  add_dots(68);
+  cprintf("\n");
+  return 1;
+}
