@@ -102,3 +102,7 @@ sys_change_queue(void){
   if(argint(0,&pid) < 0 || argint(1,&queue) < 0 || queue < ROUND_ROBIN || queue > FCFS) return -1;
   return change_queue(pid,queue);
 }
+int
+sys_show_procs_info(void){
+  return show_procs_info(); 
+}
