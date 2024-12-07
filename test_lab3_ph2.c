@@ -5,14 +5,14 @@
 int
 main(int argc, char *argv[])
 {
-  int pid, new_queue;
+  int pid, queue;
   
-  if(argc != 2) {
-    printf(2, "Usage: change_queue_test <new_queue>\n");
+  if(argc != 3) {
+    printf(2, "please give a pid and a queue in the command line please!\n");
     exit();
   }
   
-  new_queue = atoi(argv[1]);
+  queue = atoi(argv[2]);
   
   pid = fork();
   
@@ -26,12 +26,12 @@ main(int argc, char *argv[])
     exit();
   } else {
     // Parent process
-    printf(1, "Parent attempting to change child's (PID: %d) queue to %d\n", pid, new_queue);
+    printf(1, "Parent attempting to change child's (PID: %d) queue to %d\n", pid, queue);
     
-    int result = change_queue(pid, new_queue);
+    int result = change_queue(pid, queue);
     
-    if(result == 0) {
-      printf(1, "Successfully changed queue for process %d to %d\n", pid, new_queue);
+    if(result == 1) {
+      printf(1, "Successfully changed queue for process %d to %d\n", pid, queue);
     } else {
       printf(2, "Failed to change queue for process %d\n", pid);
     }
