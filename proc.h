@@ -38,12 +38,11 @@ extern uint ticks;
 
 struct schedData {
   enum Squeue queue;
-  int last_run;
   int wait_time;
   int burst_time;
   int confidence;
-  int arrival_time;
   int consecutive_run;
+  int last_run;
 };
 // to here
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
@@ -63,7 +62,7 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
-  uint arrival_time;              // start time of the process(new)
+  uint arrival_time;           // start time of the process(new)
   struct schedData sched_info ;     //scheduling data(new)
 };
 
