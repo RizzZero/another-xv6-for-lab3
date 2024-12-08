@@ -7,7 +7,7 @@
 #include "proc.h"
 #include "spinlock.h"
 #include "sleeplock.h"
-
+#define QUEUE_TIME_SLICE 10 // Time slice for each queue (in ticks)
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
@@ -381,39 +381,47 @@ first_come_first_serve(struct proc* previous_inQ){
   }
   return first_come;
 }
-void
-scheduler(void)
+
+
+void scheduler(void)
 {
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
-  
-  for(;;){
-    // Enable interrupts on this processor.
+  int current_queue = 0;   // Queue index: 0 = Round Robin, 1 = SJF, 2 = FCFS
+  int time_slice_counter = 0; // Counter for time slicing
+
+  for (;;) {
     sti();
 
-    // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->state != RUNNABLE)
-        continue;
 
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
+    // Rotate between queues based on time slice
+    struct proc *(*queue_scheduler[3])(struct proc*) = {
+      round_robin,
+      shortest_job_first,
+      first_come_first_serve
+    };
+
+    p = queue_scheduler[current_queue](ptable.proc);
+
+    if (p && p->state == RUNNABLE) {
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
-      p->sched_info.consecutive_run += 1;//increment consecutive run(new)
       swtch(&(c->scheduler), p->context);
       switchkvm();
-
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
       c->proc = 0;
+
+      time_slice_counter++;
     }
+
     release(&ptable.lock);
 
+    if (time_slice_counter >= QUEUE_TIME_SLICE) {
+      current_queue = (current_queue + 1) % 3; // Rotate between 0, 1, 2
+      time_slice_counter = 0;
+    }
   }
 }
 
