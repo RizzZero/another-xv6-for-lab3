@@ -7,7 +7,9 @@
 #include "proc.h"
 #include "spinlock.h"
 #include "sleeplock.h"
-#define QUEUE_TIME_SLICE 10 // Time slice for each queue (in ticks)
+#define AGEMF 800
+
+static unsigned long number = 1;
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
@@ -90,10 +92,11 @@ found:
   p->state = EMBRYO;
   p->pid = nextpid++;
   p-> sched_info.consecutive_run = 0;
-  p->sched_info.burst_time = 0;
-  p->sched_info.confidence = 0;
+  p->sched_info.burst_time = 2;
+  p->sched_info.confidence = 50;
   p->arrival_time = ticks;
-  p->sched_info.queue = UNSET;
+  p->sched_info.queue = ROUND_ROBIN;
+  p->sched_info.last_run = 0;
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -254,7 +257,7 @@ exit(void)
 
   acquire(&ptable.lock);
 
-  // Parent might be sleeping in wait().
+  // Parent might be  in wait().
   wakeup1(curproc->parent);
 
   // Pass abandoned children to init.
@@ -335,35 +338,53 @@ round_robin(struct proc* previous_inQ){
     if(p->state == RUNNABLE && p->sched_info.queue == ROUND_ROBIN){
       return p;
     }
-    else if(p == previous_inQ){
+    if(p == previous_inQ){
       return 0;
     }
   }
 
 }
+
+int
+random_number_gen(void){
+  number = number*1103515245 + 12345;
+  return(unsigned int)(number%100);
+}
 struct proc*
-shortest_job_first(struct proc* previous_inQ){
-  struct proc* p = previous_inQ;
+shortest_job_first(){
+  struct proc *last_time = 0;
+  struct proc* p ;
   int least_time = 100;
-  struct proc* least_proc = 0 ;
-  for(;;){
-    p++;
+  struct proc* least_proc =0;
+  for(p=ptable.proc;p<&ptable.proc[NPROC];p++){
     if( p >= &ptable.proc[NPROC]){
       p = ptable.proc ;
     }
     if( p->state == RUNNABLE && p->sched_info.queue == SJF){
       if (p->sched_info.burst_time <= least_time){
-        least_time = p->sched_info.burst_time ; 
-        least_proc = p ;
+        int n = random_number_gen();
+        cprintf("%d rng - %d our nm",n,p->sched_info.confidence);
+        if(p->sched_info.confidence >= n){
+          least_time = p->sched_info.burst_time ; 
+          least_proc = p ;
+        }
+        else{
+          last_time = p;
+        }
       }
       else continue;
     }
   }
-  return least_proc;
+  if (least_proc == 0){
+    return last_time;
+  }
+  else{
+    return least_proc;
+  }
 }
 struct proc*
-first_come_first_serve(struct proc* previous_inQ){
-  struct proc* p = previous_inQ;
+first_come_first_serve(){
+  struct proc* p = 0;
   int time = ticks;
   struct proc* first_come = 0 ;
   for(;;){
@@ -381,47 +402,43 @@ first_come_first_serve(struct proc* previous_inQ){
   }
   return first_come;
 }
-
-
-void scheduler(void)
+void
+scheduler(void)
 {
   struct proc *p;
   struct cpu *c = mycpu();
+  //struct proc *previous_inQ = &ptable.proc[NPROC-1] ;
   c->proc = 0;
-  int current_queue = 0;   // Queue index: 0 = Round Robin, 1 = SJF, 2 = FCFS
-  int time_slice_counter = 0; // Counter for time slicing
+  
 
-  for (;;) {
+  for(;;){
+    // Enable interrupts on this processor.
     sti();
 
+    // Loop over process table looking for process to run.
     acquire(&ptable.lock);
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state != RUNNABLE)
+        continue;
 
-    // Rotate between queues based on time slice
-    struct proc *(*queue_scheduler[3])(struct proc*) = {
-      round_robin,
-      shortest_job_first,
-      first_come_first_serve
-    };
-
-    p = queue_scheduler[current_queue](ptable.proc);
-
-    if (p && p->state == RUNNABLE) {
+      // Switch to chosen process.  It is the process's job
+      // to release ptable.lock and then reacquire it
+      // before jumping back to us.
       c->proc = p;
       switchuvm(p);
       p->state = RUNNING;
+      p->sched_info.consecutive_run += 1;//increment consecutive run(new)
+      p->sched_info.last_run = ticks; // new last run keeper
+
       swtch(&(c->scheduler), p->context);
       switchkvm();
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
       c->proc = 0;
-
-      time_slice_counter++;
     }
-
     release(&ptable.lock);
-
-    if (time_slice_counter >= QUEUE_TIME_SLICE) {
-      current_queue = (current_queue + 1) % 3; // Rotate between 0, 1, 2
-      time_slice_counter = 0;
-    }
+    
   }
 }
 
@@ -522,7 +539,7 @@ sleep(void *chan, struct spinlock *lk)
 }
 
 //PAGEBREAK!
-// Wake up all processes sleeping on chan.
+// Wake up all processes  on chan.
 // The ptable lock must be held.
 static void
 wakeup1(void *chan)
@@ -536,7 +553,7 @@ wakeup1(void *chan)
     }
 }
 
-// Wake up all processes sleeping on chan.
+// Wake up all processes  on chan.
 void
 wakeup(void *chan)
 {
@@ -638,6 +655,7 @@ change_queue(int pid, int queue){
     if(pid==p->pid){
       Q = p->sched_info.queue;
       if (Q != queue){
+        cprintf("old queue is: %d and new queue is: %d \n",Q,queue);
         p->sched_info.queue = queue;
         p->arrival_time = ticks;
         Q = 1;
@@ -705,4 +723,36 @@ show_procs_info(void){
   add_dots(68);
   cprintf("\n");
   return 1;
+}
+void
+age(int time){
+  struct proc*p;
+  acquire(&ptable.lock);
+  for(p = ptable.proc; p<&ptable.proc[NPROC];p++){
+    if(p->state == RUNNABLE){
+      if(ticks - p->sched_info.last_run > 800){
+        release(&ptable.lock);
+        switch (p->sched_info.queue)
+        {
+        case ROUND_ROBIN:{
+          p->sched_info.last_run = 0; //for fun
+          break;
+        }
+        case FCFS:{
+          change_queue(p->pid,SJF);
+          p->sched_info.last_run = 0 ;
+          break;
+        }
+        case SJF:{
+          change_queue(p->pid,ROUND_ROBIN);
+          p->sched_info.last_run = 0;
+        }
+        default:
+          break;
+        }
+        acquire(&ptable.lock);
+      }
+    }
+  }
+  release(&ptable.lock);
 }
